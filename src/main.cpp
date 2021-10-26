@@ -52,6 +52,34 @@ void keyCallback(GLFWwindow* window, int key, int, int action, int) {
     //       2. switch between phong shader and gouraurd shader
     // Hint: use currentLight, isLightChanged, currentShader
     // Note: 1 key for 1 variable change
+    case GLFW_KEY_1:
+      if (graphics::light::LightType(currentLight) != graphics::light::LightType::Directional) {
+        currentLight = int(graphics::light::LightType::Directional);
+        isLightChanged = true;
+      }
+        break;
+    case GLFW_KEY_2: 
+      if (graphics::light::LightType(currentLight) != graphics::light::LightType::Point) {
+        currentLight = int(graphics::light::LightType::Point);
+        isLightChanged = true;
+      }
+        break;
+    case GLFW_KEY_3: 
+      if (graphics::light::LightType(currentLight) != graphics::light::LightType::Spot) {
+        currentLight = int(graphics::light::LightType::Spot);
+        isLightChanged = true;
+      }
+        break;
+    case GLFW_KEY_4: 
+      if (currentShader != 0) {
+        currentShader = 0;
+      }
+        break;
+    case GLFW_KEY_5: 
+      if (currentShader != 1) {
+        currentShader = 1;
+      }
+        break;
     default: break;
   }
 }
@@ -160,23 +188,35 @@ int main() {
   lights.emplace_back(graphics::light::PointLight::make_unique(glm::vec3(8, 6, 6)));
   lights.emplace_back(graphics::light::Spotlight::make_unique(currentCamera->getFront(), cutoff));
   assert(lights.size() == LIGHT_COUNT);
-  // TODO: Bind light object's buffer
+  // TODO_OK: Bind light object's buffer
   // Hint: look what we did when binding other UBO
   for (int i = 0; i < LIGHT_COUNT; ++i) {
     int offset = i * perLightOffset;
+    lightUBO.load(offset, sizeof(glm::mat4), lights[i]->getLightSpaceMatrixPTR());
+    lightUBO.load(offset + sizeof(glm::mat4), sizeof(glm::vec4), lights[i]->getLightVectorPTR());
+    lightUBO.load(offset + sizeof(glm::mat4) + sizeof(glm::vec4), sizeof(glm::vec4),
+                  lights[i]->getLightCoefficientsPTR());
   }
   // Texture
   graphics::texture::ShadowMap shadow(maxTextureSize);
   graphics::texture::Texture2D colorOrange, wood;
   graphics::texture::TextureCubeMap dice;
+  
+  wood.fromFile("../assets/texture/wood.jpg");
+  dice.fromFile(
+      "../assets/texture/posx.jpg",
+      "../assets/texture/negx.jpg",
+      "../assets/texture/posy.jpg",
+      "../assets/texture/negy.jpg",
+      "../assets/texture/posz.jpg",
+      "../assets/texture/negz.jpg"
+  );
   colorOrange.fromColor(glm::vec4(1, 0.5, 0, 1));
-  // TODO: Read texture(and set color) for objects respectively
+  // TODO_OK: Read texture(and set color) for objects respectively
   // Hint: check the calss of the variable(wood, colorOrange, dice) we've created for you.
   //       fromFile member function
   // We currently set everything to a color
-  wood.fromColor(glm::vec4(0.5, 0, 0.5, 1));
-  dice.fromColor(glm::vec4(1, 0, 0, 1), glm::vec4(1, 0.5, 0, 1), glm::vec4(0, 1, 0, 1), glm::vec4(0, 0, 1, 1),
-                 glm::vec4(1, 1, 1, 1), glm::vec4(1, 1, 0, 1));
+  // 
   // Meshes
   std::vector<graphics::shape::ShapePTR> meshes;
   std::vector<graphics::texture::Texture*> diffuseTextures;
