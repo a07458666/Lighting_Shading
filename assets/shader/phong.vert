@@ -5,6 +5,9 @@ layout(location = 2) in vec2 TextureCoordinate_in;
 
 out vec2 TextureCoordinate;
 out vec3 rawPosition;
+out vec3 FragPos;
+out vec3 Normal;
+out vec3 lightPos;
 
 layout (std140) uniform model {
   // Model matrix
@@ -28,6 +31,8 @@ layout (std140) uniform light {
   // inner cutoff, outer cutoff, isSpotlight, isDirectionalLight
   vec4 coefficients;
 };
+
+uniform int isBlinn;
 
 void main() {
   TextureCoordinate = TextureCoordinate_in;
@@ -56,4 +61,7 @@ void main() {
   //       9. we've set ambient & color for you
   // Example without lighting :)
   gl_Position = viewProjectionMatrix * modelMatrix * vec4(Position_in, 1.0);
+  FragPos = vec3(modelMatrix * vec4(Position_in, 1.0));
+  Normal = vec3(normalMatrix * vec4(Normal_in, 0.0));
 }
+

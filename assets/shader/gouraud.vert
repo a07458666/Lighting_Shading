@@ -9,6 +9,8 @@ layout(location = 2) in vec2 TextureCoordinate_in;
 // You may want to add some out here
 out vec3 rawPosition;
 out vec2 TextureCoordinate;
+out vec4 gl_Position;
+out float lighting;
 
 // Uniform blocks
 // https://www.khronos.org/opengl/wiki/Interface_Block_(GLSL)
@@ -68,4 +70,43 @@ void main() {
   //       9. we've set ambient & color for you
   // Example without lighting :)
   gl_Position = viewProjectionMatrix * modelMatrix * vec4(Position_in, 1.0);
+  vec4 worldPosition = modelMatrix * vec4(Position_in, 1.0);
+  vec4 norm = normalize(normalMatrix * vec4(Normal_in, 0.0));
+
+  float shininess = 8.0;
+  float distance = length(lightVector - worldPosition);
+  vec4 lightDir;
+  float attenuation = 0;
+  // Spotlight
+  if (coefficients.z == 1.0) {
+      float constant = 1.0;
+      float linear = 0.014;
+      float quadratic = 0.007;
+      lightDir = normalize(viewPosition - worldPosition);
+      float theta = dot(lightDir, normalize(-lightVector));
+      float epsilon = coefficients.x - coefficients.y;
+      float intensity = clamp((theta - coefficients.y) / epsilon, 0.0, 1.0);
+      attenuation = 1.0 / (constant + linear * distance + quadratic * (distance * distance));
+      attenuation = attenuation * intensity;
+  }
+  // Directional Light
+  else if (coefficients.w == 1.0){
+    lightDir = normalize(lightVector);
+    attenuation = 0.65;
+  }
+  // Point light
+  else{
+    float constant = 1.0;
+    float linear = 0.027;
+    float quadratic = 0.0028;
+  	lightDir = normalize(lightVector - worldPosition);
+    attenuation = 1.0 / (constant + linear * distance + quadratic * (distance * distance));
+  }
+  vec4 viewDir = normalize(viewPosition - worldPosition);
+
+  float diffuse = kd * max(dot(lightDir, norm), 0.0);
+  vec4 reflectDir = reflect(-lightDir, norm);  
+  float specular = ks * pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+  float shadow = 1.0;
+  lighting = ambient + attenuation * shadow * (diffuse + specular);
 }

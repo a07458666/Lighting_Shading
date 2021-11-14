@@ -28,7 +28,8 @@ bool isLightChanged = true;
 int currentLight = 0;
 int currentShader = 1;
 int alignSize = 256;
-// TODO (optional): Configs
+int isBlinn = 1;
+    // TODO (optional): Configs
 // You should change line 32-35 if you add more shader / light / camera / mesh.
 constexpr int LIGHT_COUNT = 3;
 constexpr int CAMERA_COUNT = 1;
@@ -71,15 +72,30 @@ void keyCallback(GLFWwindow* window, int key, int, int action, int) {
       }
         break;
     case GLFW_KEY_4: 
-      if (currentShader != 0) {
-        currentShader = 0;
-      }
-        break;
-    case GLFW_KEY_5: 
       if (currentShader != 1) {
+        std::cout << "phong" << std::endl;
         currentShader = 1;
       }
         break;
+    case GLFW_KEY_5: 
+      if (currentShader != 2) {
+        std::cout << "gouraud" << std::endl;
+        currentShader = 2;
+      }
+        break;
+    case GLFW_KEY_6:
+      if (currentShader != 0) {
+        std::cout << "shadow" << std::endl;
+        currentShader = 0;
+      }
+      break;
+    case GLFW_KEY_7:
+      if (currentShader == 1) {
+        std::cout << "isBlinn change" << std::endl;
+        if (isBlinn == 1) isBlinn = 0;
+        else isBlinn = 1;
+      }
+      break;
     default: break;
   }
 }
@@ -133,14 +149,18 @@ int main() {
     //        https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glGetUniformBlockIndex.xhtml
     //       5. Check uniformBlockBinding and setUniform member function of ShaderProgram class
     //       We only set some variables here, you need more when you're lighting
+
     shaderPrograms[i].uniformBlockBinding("model", 0);
     shaderPrograms[i].uniformBlockBinding("camera", 1);
     // Maybe light here or other uniform you set :)
+    shaderPrograms[i].uniformBlockBinding("light", 2);
+
 
     shaderPrograms[i].setUniform("diffuseTexture", 0);
     shaderPrograms[i].setUniform("shadowMap", 1);
     shaderPrograms[i].setUniform("diffuseCubeTexture", 2);
     shaderPrograms[i].setUniform("isCube", 0);
+    shaderPrograms[i].setUniform("isBlinn", isBlinn);
   }
   graphics::buffer::UniformBuffer meshUBO, cameraUBO, lightUBO;
   // Calculate UBO alignment size
@@ -274,7 +294,7 @@ int main() {
         lightUBO.load(offset + sizeof(glm::mat4), sizeof(glm::vec4), glm::value_ptr(front));
       }
     }
-
+    
     if (isLightChanged) {
       int offset = currentLight * perLightOffset;
       // TODO: Switch light uniforms if light changes
@@ -283,6 +303,7 @@ int main() {
       //       the next light info
       //       2. you should not bind the same light every time, because we are in a while-loop
       // Note: You can do this by a single line of lightUBO.bindUniformBlockIndex call
+      lightUBO.bindUniformBlockIndex(2, offset, perLightSize);
       if (lights[currentLight]->getType() == graphics::light::LightType::Spot) {
         lights[currentLight]->update(currentCamera->getViewMatrix());
         glm::vec4 front = currentCamera->getFront();
@@ -298,6 +319,7 @@ int main() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // Render all objects
     shaderPrograms[currentShader].use();
+    shaderPrograms[currentShader].setUniform("isBlinn", isBlinn);
     for (int i = 0; i < MESH_COUNT; ++i) {
       // Change uniform if it is a cube (We want to use cubemap texture)
       if (meshes[i]->getType() == graphics::shape::ShapeType::Cube) {

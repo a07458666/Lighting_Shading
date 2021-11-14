@@ -5,6 +5,7 @@ layout(location = 0) out vec4 FragColor;
 // You may want to add some in here if you add some outs in vs
 in vec3 rawPosition;
 in vec2 TextureCoordinate;
+in float lighting;
 
 // Texture of object
 uniform sampler2D diffuseTexture;
@@ -35,5 +36,6 @@ void main() {
   //       9. we've set color for you
 
   // No lighting now
+  color = lighting * color;
   FragColor = vec4(color, 1.0);
 }
